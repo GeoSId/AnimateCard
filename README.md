@@ -14,7 +14,6 @@ To use Gemini's features, you need to obtain an API key and configure it in your
 2. **Go to  `local.properties` file:** In the root directory of your project.
 3. **Add your API key:** Add the following line to the `local.properties` file, replacing `apiKey` with your actual API key:
 
-
 ## Features
 
 - **Card Flip Animation:** Cards smoothly rotate 180 degrees when clicked, revealing content on the back.
