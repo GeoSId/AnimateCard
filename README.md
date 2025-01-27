@@ -25,6 +25,9 @@ To use Gemini's features, you need to obtain an API key and configure it in your
 ## Getting Started
 
 1. **Clone the repository:**
+
+   bash git clone https://github.com/GeoSId/jetNews
+
 2.  **Open the project in Android Studio:**
       Import the project into Android Studio.
 3. **Build and run the app:**
@@ -46,7 +49,7 @@ To use Gemini's features, you need to obtain an API key and configure it in your
 Contributions are welcome! If you find any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request.
 ## Video
 
-Check the video [test_compose_gen_animate]()
+Check the video [test_compose_gen_animate](https://github.com/GeoSId/jetNews/blob/master/test_compose_gen_animate.mp4)
 
 ## License
 
