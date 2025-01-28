@@ -51,6 +51,9 @@ Contributions are welcome! If you find any issues or have suggestions for improv
 
 Check the video [test_compose_gen_animate](https://github.com/GeoSId/jetNews/blob/master/test_compose_gen_animate.mp4)
 
+[compose_test.webm](https://github.com/user-attachments/assets/a7e0e0d1-0802-4fd0-9dea-04acea12b834)
+
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
