@@ -1,4 +1,4 @@
-# jetNews
+# AnimateCard
 
 # Animated Cards in Jetpack Compose
 
@@ -26,7 +26,7 @@ To use Gemini's features, you need to obtain an API key and configure it in your
 
 1. **Clone the repository:**
 
-   bash git clone https://github.com/GeoSId/jetNews
+   bash git clone https://github.com/GeoSId/AnimateCard
 
 2.  **Open the project in Android Studio:**
       Import the project into Android Studio.
