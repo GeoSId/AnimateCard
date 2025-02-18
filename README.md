@@ -49,7 +49,7 @@ To use Gemini's features, you need to obtain an API key and configure it in your
 Contributions are welcome! If you find any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request.
 ## Video
 
-Check the video [test_compose_gen_animate](https://github.com/GeoSId/jetNews/blob/master/test_compose_gen_animate.mp4)
+Check the video [test_compose_gen_animate](https://github.com/GeoSId/AnimateCard/blob/master/test_compose_gen_animate.mp4)
 
 [compose_test.webm](https://github.com/user-attachments/assets/a7e0e0d1-0802-4fd0-9dea-04acea12b834)
 
