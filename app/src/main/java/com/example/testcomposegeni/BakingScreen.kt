@@ -1,7 +1,11 @@
 package com.example.testcomposegeni
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -28,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -39,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -48,6 +54,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 
 val images = arrayOf(
     R.drawable.baked_goods_1,
@@ -73,6 +80,18 @@ fun BakingScreen(
     val uiState by bakingViewModel.uiState.collectAsState()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    
+    // Animation for button
+    val infiniteTransition = rememberInfiniteTransition(label = "buttonPulse")
+    val buttonScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "buttonPulseAnim"
+    )
 
     Column(
         modifier = Modifier
@@ -106,7 +125,20 @@ fun BakingScreen(
                     .fillMaxWidth()
             ) {
                 itemsIndexed(images) { index, image ->
-                    AnimateCard(selectedImageIndex, index, image)
+                    // Add staggered entrance animation
+                    var visible by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) {
+                        delay(index * 100L)
+                        visible = true
+                    }
+                    
+                    // Use AnimateCard with initialVisibility parameter
+                    AnimateCard(
+                        selectedImageIndex = selectedImageIndex,
+                        index = index,
+                        imageResource = image,
+                        initialVisibility = visible
+                    )
                 }
             }
 
@@ -139,6 +171,7 @@ fun BakingScreen(
                     },
                     enabled = prompt.isNotEmpty(),
                     modifier = Modifier
+                        .scale(if (prompt.isNotEmpty()) buttonScale else 1f)
                         .align(Alignment.CenterVertically)
                 ) {
                     Text(text = stringResource(R.string.action_go))
@@ -153,6 +186,7 @@ fun BakingScreen(
                 result = (uiState as UiState.Success).outputText
             }
 
+            // Replace Box+AnimatedVisibility with Text directly
             Text(
                 modifier = Modifier
                     .constrainAs(results) {
@@ -161,7 +195,11 @@ fun BakingScreen(
                         end.linkTo(parent.end)
                     }
                     .padding(16.dp)
-                    .verticalScroll(scrollState),
+                    .verticalScroll(scrollState)
+                    .graphicsLayer {
+                        alpha = if (result.isNotEmpty()) 1f else 0f
+                        translationX = if (result.isNotEmpty()) 0f else 100f
+                    },
                 text = result,
                 textAlign = TextAlign.Start,
                 color = textColor,
@@ -180,80 +218,169 @@ fun BakingScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    CircularProgressIndicator(modifier = Modifier)
+                    // Enhanced loading animation
+                    val rotationAnim = rememberInfiniteTransition(label = "loadingRotation")
+                    val rotationAngle by rotationAnim.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 360f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(2000),
+                            repeatMode = RepeatMode.Restart
+                        ),
+                        label = "loadingRotationAnim"
+                    )
+                    
+                    val scaleAnim = rememberInfiniteTransition(label = "loadingScale")
+                    val loaderScale by scaleAnim.animateFloat(
+                        initialValue = 0.8f,
+                        targetValue = 1.2f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1000),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "loadingScaleAnim"
+                    )
+                    
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .scale(loaderScale)
+                            .graphicsLayer { 
+                                rotationZ = rotationAngle
+                            },
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    )
+                    
+                    // Replace AnimatedVisibility with Text with animation properties
+                    Text(
+                        text = "Getting response from Gemini...",
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .graphicsLayer {
+                                alpha = 1f  // Always visible when loading
+                            },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
     }
 }
 
-    @Composable
-    fun AnimateCard(
-        selectedImageIndex: MutableIntState,
-        index: Int,
-        imageResource: Int
-    ) {
+@Composable
+fun AnimateCard(
+    selectedImageIndex: MutableIntState,
+    index: Int,
+    imageResource: Int,
+    initialVisibility: Boolean = true
+) {
+    val isSelected by remember(selectedImageIndex.intValue, index) {
+        derivedStateOf { index == selectedImageIndex.intValue }
+    }
 
-        val isSelected by remember(selectedImageIndex.intValue, index) {
-            derivedStateOf { index == selectedImageIndex.intValue }
-        }
-
-        var rotated by remember { mutableStateOf(false) }
-
-        val animationProgress by animateFloatAsState(
-            targetValue = if (rotated) 1f else 0f,
-            animationSpec = tween(500), label = "cardRotation"
-        )
-
-        Card(
-            modifier = Modifier
-                .width(200.dp)
-                .height(200.dp)
-                .padding(16.dp)
-                .graphicsLayer {
-                    alpha = if (rotated) animationProgress else 1 - animationProgress
-                    rotationY = animationProgress * 180f
-                    cameraDistance = 8 * density
-                },
-            shape = RoundedCornerShape(50.dp),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 0.dp,
-            ),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            ),
-        ) {
-            if (!rotated) {
-                Image(
-                    modifier = Modifier
-                        .padding(start = 8.dp, end = 8.dp)
-                        .requiredSize(200.dp)
-                        .clickable {
-                            selectedImageIndex.intValue = index
-                            rotated = !rotated
-                        },
-                    painter = painterResource(imageResource),
-                    contentDescription = stringResource(imageDescriptions[index]),
-                )
-            } else {
-                Text(
-                    modifier = Modifier
-                        .padding(top = 16.dp)
-                        .graphicsLayer {
-                            rotationY = animationProgress * 180f
-                        }
-                        .clickable {
-                            rotated = !rotated
-                        }
-                        .fillMaxHeight()
-                        .fillMaxSize(),
-                    text = stringResource(imageDescriptions[index]),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
+    var rotated by remember { mutableStateOf(false) }
+    
+    // Add slide-in animation using graphicsLayer based on initialVisibility
+    var animatedTranslation by remember { mutableStateOf(if (initialVisibility) 0f else 200f) }
+    var animatedAlpha by remember { mutableStateOf(if (initialVisibility) 1f else 0f) }
+    
+    // Animate the entrance when initialVisibility becomes true
+    LaunchedEffect(initialVisibility) {
+        if (initialVisibility) {
+            delay(index * 100L) // Staggered delay
+            animatedTranslation = 0f
+            animatedAlpha = 1f
         }
     }
+
+    // Simplify rotation animation to use tween for more predictable behavior
+    val rotationAnimation by animateFloatAsState(
+        targetValue = if (rotated) 1f else 0f,
+        animationSpec = tween(500), 
+        label = "cardRotation"
+    )
+    
+    // Add scale animation for selected card
+    val scaleAnimation by animateFloatAsState(
+        targetValue = if (isSelected) 1.1f else 1.0f,
+        animationSpec = tween(300),
+        label = "cardScale"
+    )
+    
+    // Add elevation animation
+    val elevationAnimation by animateFloatAsState(
+        targetValue = if (isSelected) 8f else 2f,
+        animationSpec = tween(300),
+        label = "cardElevation"
+    )
+    
+    // Add entrance animations
+    val slideAnimation by animateFloatAsState(
+        targetValue = animatedTranslation,
+        animationSpec = tween(500),
+        label = "slideAnimation"
+    )
+    
+    val fadeAnimation by animateFloatAsState(
+        targetValue = animatedAlpha,
+        animationSpec = tween(500),
+        label = "fadeAnimation"
+    )
+
+    Card(
+        modifier = Modifier
+            .width(200.dp)
+            .height(200.dp)
+            .padding(16.dp)
+            .scale(scaleAnimation)
+            .graphicsLayer {
+                alpha = fadeAnimation * (if (rotated) rotationAnimation else 1 - rotationAnimation)
+                rotationY = rotationAnimation * 180f
+                cameraDistance = 8 * density
+                shadowElevation = elevationAnimation
+                translationX = slideAnimation
+            },
+        shape = RoundedCornerShape(50.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = elevationAnimation.dp,
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        // Use simple conditional based on rotation threshold
+        if (rotationAnimation < 0.5f) {
+            Image(
+                modifier = Modifier
+                    .padding(start = 8.dp, end = 8.dp)
+                    .requiredSize(200.dp)
+                    .clickable {
+                        selectedImageIndex.intValue = index
+                        rotated = !rotated
+                    },
+                painter = painterResource(imageResource),
+                contentDescription = stringResource(imageDescriptions[index]),
+            )
+        } else {
+            Text(
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .graphicsLayer {
+                        // Fix the rotation for the back side
+                        rotationY = 180f
+                    }
+                    .clickable {
+                        rotated = !rotated
+                    }
+                    .fillMaxHeight()
+                    .fillMaxSize(),
+                text = stringResource(imageDescriptions[index]),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
 
 @Preview(showSystemUi = true)
 @Composable
